@@ -1,126 +1,120 @@
 import { createRequire as _createRequire } from "module";
 const __require = _createRequire(import.meta.url);
-let task1 = {
-    id: "sdsjds8",
-    title: 'estudiar typescript',
-    state: 'pendiente',
-    category: 'estudio',
-    createdAt: new Date()
-};
-let task2 = {
-    id: "fdffd33",
-    title: 'leer la Biblia',
-    state: 'completada',
-    category: 'iglesia',
-    createdAt: new Date()
-};
-let task3 = {
-    id: "sdsdsd3445",
-    title: 'Prepara un Sermon',
-    state: 'pendiente',
-    category: 'iglesia',
-    createdAt: new Date()
-};
-let tasks = [task1, task2, task3];
-function findTaskById(tasks, id) {
-    for (let i = 0; i < tasks.length; i++) {
-        const task = tasks[i];
-        if (task && task.id === id) {
-            return task;
-        }
-    }
-    console.log(`No se encontro la tarea con el id ${id}`);
-    return null;
-}
-const task = findTaskById(tasks, "fdffd33");
 const crypto = __require("crypto");
-function createTask(data) {
-    const task = {
-        id: crypto.randomUUID(),
-        title: data.title,
-        state: 'pendiente',
-        category: data.category,
-        createdAt: new Date()
-    };
-    return task;
-}
-//const createTask1 = createTask({title: 'enseñar a mis colegas', category: 'trabajo'})
-//console.log(createTask1)
-function updateTask(data, id) {
-    for (let i = 0; i < tasks.length; i++) {
-        const task = tasks[i];
-        if (task && task.id === id) {
-            if (data.title !== undefined) {
-                task.title = data.title;
-            }
-            if (data.category !== undefined) {
-                task.category = data.category;
-            }
-            //Tenia la opcion de poner las dos actualizaciones dentro de un solo if: if(data.title !== undefined && data.category !== undefined){}; pero ahí si o si tambientendrían que enviar los dos campos a actualizar quise poner el operador || y ahi me sale error
-            //solo me quedo separarlos con 2 if para cada campo
-            console.log(`Tarea actualizada satisfacctoriamente`);
-            return task;
-        }
+//DIA 03 ------------------------------------------------------------------------------------------
+class TaskManger {
+    tasks = [];
+    getTaks() {
+        return [...this.tasks];
     }
-    console.log(`NO se una tarea con el ID ${id}`);
-    return undefined;
-}
-//updateTask({title: 'Tarea actualizada', category:'iglesia'}, "sdsdsd3445")
-function completeTask(data) {
-    if (data.state === 'pendiente') {
-        return {
-            ...data,
-            state: 'completada'
+    createTask(data) {
+        const task = {
+            id: crypto.randomUUID(),
+            title: data.title,
+            state: 'pendiente',
+            category: data.category,
+            createdAt: new Date()
         };
+        this.tasks.push(task);
+        return task;
     }
-    else if (data.state === 'cancelada') {
-        console.log("La tarea se encuentra cancelada, no se puede completar");
+    findTaskById(id) {
+        for (let i = 0; i < this.tasks.length; i++) {
+            const task = this.tasks[i];
+            if (task && task.id === id) {
+                return task;
+            }
+        }
+        console.log(`No se encontro la tarea con el id ${id}`);
         return null;
     }
-    else if (data.state === 'completada') {
-        throw new Error(`La tarea ya está completada`);
+    deleteTask(id) {
+        for (let i = 0; i < this.tasks.length; i++) {
+            const task = this.tasks[i];
+            if (task && task.id === id) {
+                this.tasks.splice(i, 1);
+                console.log('Tarea eliminada, ', task);
+                return true;
+            }
+        }
+        console.log('No se encontro tarea con el id ', id);
+        return false;
     }
-    return null;
-}
-function cancelTask(data) {
-    if (data.state === 'pendiente') {
-        return {
-            ...data,
-            state: 'cancelada'
-        };
+    updateTask(id, data) {
+        for (let i = 0; i < this.tasks.length; i++) {
+            const task = this.tasks[i];
+            if (task && task.id === id) {
+                if (data.title !== undefined) {
+                    task.title = data.title;
+                }
+                if (data.category !== undefined) {
+                    task.category = data.category;
+                }
+                console.log(`Tarea actualizada satisfacctoriamente`);
+                return task;
+            }
+        }
+        console.log(`NO se encontró la tarea con el ID ${id}`);
+        return undefined;
     }
-    else if (data.state === 'cancelada') {
-        throw new Error(`La tarea ya se encuentra cancelada`);
-    }
-    else if (data.state === 'completada') {
-        console.log(`sin acción, la tarea se encuentra completada`);
+    completeTask(id) {
+        for (let i = 0; i < this.tasks.length; i++) {
+            const task = this.tasks[i];
+            if (task && task.id === id) {
+                if (task.state === 'pendiente') {
+                    const completedTask = {
+                        ...task,
+                        state: 'completada'
+                    };
+                    this.tasks[i] = completedTask;
+                    return completedTask;
+                }
+                else if (task.state === 'cancelada') {
+                    console.log("La tarea se encuentra cancelada, no se puede completar");
+                    return null;
+                }
+                else if (task.state === 'completada') {
+                    throw new Error(`La tarea ya está completada`);
+                }
+            }
+        }
+        console.log(`No se encontro la tarea con el id ${id}`);
         return null;
     }
-    return null;
-}
-// const updateTask1 = cancelTask(task3)
-// console.log(updateTask1)
-// const completed = completeTask(task1)
-// console.log('completed', completed)
-// const canceled = cancelTask(task1)
-// console.log('canceled' , canceled)
-// console.log('Task 1', task1)
-function deleteTask(id) {
-    for (let i = 0; i < tasks.length; i++) {
-        const task = tasks[i];
-        if (task && task.id === id) {
-            tasks.splice(i, 1);
-            console.log('Tarea eliminada, ', task);
-            return true;
+    cancelTask(id) {
+        for (let i = 0; i < this.tasks.length; i++) {
+            const task = this.tasks[i];
+            if (task && task.id === id) {
+                if (task.state === 'pendiente') {
+                    const updatedTask = {
+                        ...task,
+                        state: 'cancelada'
+                    };
+                    this.tasks[i] = updatedTask;
+                    return updatedTask;
+                }
+                else if (task.state === 'cancelada') {
+                    throw new Error(`La tarea ya se encuentra cancelada`);
+                }
+                else if (task.state === 'completada') {
+                    console.log("sin acción, la tarea está completada");
+                    return null;
+                }
+            }
         }
+        console.log(`No se encontro la tarea con el id ${id}`);
+        return null;
     }
-    console.log('No se encontro tarea con el id ', id);
-    return false;
 }
-// const deleteTask01 = deleteTask("sdsdsd3445")
-// console.log(deleteTask01)
-// console.log("taks =>", tasks)
-const deleteTask02 = deleteTask("id-que-no-existe");
-console.log(deleteTask02);
-console.log("taks =>", tasks);
+const manager = new TaskManger();
+const task01 = manager.createTask({ title: "dirección de culto", category: "iglesia" });
+//manager.findTaskById('id-cualquier')
+const task02 = manager.createTask({ title: "Cocinar el desayuno", category: 'casa' });
+manager.createTask({ title: "Alimentar a mis conejos", category: 'casa' });
+manager.createTask({ title: "Visitar a una hermana", category: 'iglesia' });
+manager.completeTask(task01.id);
+manager.cancelTask(task02.id);
+console.log("task02 => ", task02);
+console.log("despues de completar", task01);
+console.log(manager.getTaks());
 //# sourceMappingURL=index.js.map
