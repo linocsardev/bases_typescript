@@ -3,12 +3,15 @@ interface Task {
     title: string,
     state: statusTask,
     category: categoryTask,
-    createdAt: Date //quise poner el new Date() en vez de string pero me aparece error
+    createdAt: Date
     
 }
-//interface de Task para cuidar la entrada de datos
 
-type statusTask = 'pendiente'| 'completada' | 'cancelada'; //type porque mi variable solo restrinjo en 3 posibilidades 
+type CreateTaskInput = Pick<Task, 'title'| 'category'>
+type UpdateTaskInput = Partial<Pick<Task,'title' | 'category' >>
+type TaskWithoutDates = Omit<Task, 'createdAt'>
+
+type statusTask = 'pendiente'| 'completada' | 'cancelada'; 
 type categoryTask = 'casa' | 'trabajo' | 'iglesia' | 'vecindad' | 'estudio'
 
 let task1:Task = {
@@ -34,16 +37,15 @@ let task3:Task = {
     category: 'iglesia',
     createdAt: new Date()
 };
-//al poner solo Date en el campo createdAd, que dato pongo al crear mis tareas? porque sale con error el string de la fecha
 
 let tasks:Task[] = [task1, task2, task3]
 
     
 function findTaskById(tasks:Task[], id: string):Task | null {
    for(let i=0; i<tasks.length; i++){
-       const task:Task | undefined = tasks[i]; //Aqui me sigue apareciendo un error en mi variable 'task':'Type 'Task | undefined' is not assignable to type 'Task'.
-                                    //Type 'undefined' is not assignable to type 'Task'.'
-        if(task && task.id === id){  //como corrijo tasks[i].id ; por que me indica que puede ser undefined
+       const task:Task | undefined = tasks[i]; 
+                                    
+        if(task && task.id === id){  
            
            return task;
         }
@@ -51,22 +53,11 @@ function findTaskById(tasks:Task[], id: string):Task | null {
     console.log(`No se encontro la tarea con el id ${id}`)
     return null
 }
-//QUise poner un tipo de retorno a mi funcion y no supe cual elegir, retorno true si encontro la tarea y null si no encontro, me parace que es el más indicado, porque expresa que no existe.
-//creo que al saber cual sería el tipo de retorno para mi funcion fue la más dificil
+
 const task = findTaskById(tasks, "fdffd33")
-//console.log(task)
+
 
 import crypto = require('crypto')
-
-
-interface CreateTaskInput {
-   title: string;
-   category: categoryTask
-}
-interface UpdateTaskInput {
-   title: string;
-   category: categoryTask
-}
 
 function createTask(data:CreateTaskInput): Task{
  const task: Task = {
@@ -79,17 +70,21 @@ function createTask(data:CreateTaskInput): Task{
  return task
 }
 
-const createTask1 = createTask({title: 'enseñar a mis colegas', category: 'trabajo'})
-console.log(createTask1)
-// Task representa mi interface, de los datos que le corresponden según su tipo
-//CreateTaskInput es otra interfaz solo con los datos que se necesitan para crear una tarea nueva
-//¿Por qué crees que es mejor tener dos tipos diferentes en lugar de utilizar Task directamente para crear la tarea? por que es posible que más adelante se necesiten agragar mas campos a tener solamente una interfaz, puede ser confuso ya que tenemos otra interfaz y solo podemos modificar en tal interfaz
+//const createTask1 = createTask({title: 'enseñar a mis colegas', category: 'trabajo'})
+//console.log(createTask1)
+
 function updateTask(data:UpdateTaskInput, id:string):Task | undefined{
    for(let i =0; i<tasks.length; i++){
       const task:Task | undefined = tasks[i];
       if(task && task.id === id){
-         task.title = data.title;
-         task.category = data.category;
+         if(data.title !== undefined){
+            task.title = data.title;
+         }
+         if( data.category !== undefined){
+            task.category = data.category;
+         }
+         //Tenia la opcion de poner las dos actualizaciones dentro de un solo if: if(data.title !== undefined && data.category !== undefined){}; pero ahí si o si tambientendrían que enviar los dos campos a actualizar quise poner el operador || y ahi me sale error
+         //solo me quedo separarlos con 2 if para cada campo
          console.log(`Tarea actualizada satisfacctoriamente`)
          return task
       }
@@ -97,7 +92,7 @@ function updateTask(data:UpdateTaskInput, id:string):Task | undefined{
    console.log(`NO se una tarea con el ID ${id}`)
  return undefined
 }
-updateTask({title: 'Tarea actualizada', category:'iglesia'}, "sdsdsd3445")
+//updateTask({title: 'Tarea actualizada', category:'iglesia'}, "sdsdsd3445")
 
 function completeTask(data:Task):Task | null{
  
@@ -132,13 +127,29 @@ function cancelTask(data:Task):Task | null {
    }
    return null;
 }
-const updateTask1 = cancelTask(task3)
-console.log(updateTask1)
-const completed = completeTask(task1)
-console.log('completed', completed)
-const canceled = cancelTask(task1)
-console.log('canceled' , canceled)
-console.log('Task 1', task1)
+// const updateTask1 = cancelTask(task3)
+// console.log(updateTask1)
+// const completed = completeTask(task1)
+// console.log('completed', completed)
+// const canceled = cancelTask(task1)
+// console.log('canceled' , canceled)
+// console.log('Task 1', task1)
 
-//Decidi utilizar throw new Error(), para que mande el error, aunque tambien pude enviarle null o undefined, aun no la tengo clara
-//pero no estoy seguro si en mi else{} el return sea al final las misma tarea que me envían
+function deleteTask (id: string):boolean {
+   for(let i=0; i<tasks.length; i++){
+      const task:Task | undefined = tasks[i]
+      if(task && task.id===id){
+         tasks.splice(i,1)
+         console.log('Tarea eliminada, ', task)
+         return true
+      }
+   }
+   console.log('No se encontro tarea con el id ', id)
+   return false
+}
+// const deleteTask01 = deleteTask("sdsdsd3445")
+// console.log(deleteTask01)
+// console.log("taks =>", tasks)
+const deleteTask02 = deleteTask("id-que-no-existe")
+console.log(deleteTask02)
+console.log("taks =>", tasks)
