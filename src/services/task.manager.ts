@@ -1,5 +1,6 @@
 import crypto = require('crypto')
 import type { Task, CategoryTask, CreateTaskInput, StatusTask,TaskWithoutCreateAt, UpdateTaskInput } from '../types/task.types.js';
+import {  TaskRepository } from '../repositories/task.repository.js'
 
 export class TaskManager {
     private tasks : Task[]= []
@@ -17,8 +18,10 @@ export class TaskManager {
       category:data.category,
       createdAt:new Date()
    }
-   this.tasks.push (task)
-   return task
+   this.tasks.push (task);
+   const saveTaks = new TaskRepository ()
+   saveTaks.saveFile(this.tasks)
+   return task;
    }
 
    findTaskById(id: string):Task | null {

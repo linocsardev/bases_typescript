@@ -1,0 +1,16 @@
+[
+  {
+    "id": "b542d689-a27e-4c6e-8826-9c614a8b952f",
+    "title": "dirección de culto",
+    "state": "pendiente",
+    "category": "iglesia",
+    "createdAt": "2026-08-02T02:25:28.233Z"
+  },
+  {
+    "id": "98109a7f-ddd6-4fef-9601-2343f2a66bcd",
+    "title": "Cocinar el desayuno",
+    "state": "pendiente",
+    "category": "casa",
+    "createdAt": "2026-08-02T02:25:28.234Z"
+  }
+]
