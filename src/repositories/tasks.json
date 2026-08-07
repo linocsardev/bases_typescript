@@ -12,5 +12,12 @@
     "state": "pendiente",
     "category": "casa",
     "createdAt": "2026-08-02T02:25:28.234Z"
+  },
+  {
+    "id": "40051bf4-8c41-411a-9922-5d6022aa73f4",
+    "title": "limpiar habitación",
+    "state": "pendiente",
+    "category": "estudio",
+    "createdAt": "2026-08-07T04:43:46.639Z"
   }
 ]

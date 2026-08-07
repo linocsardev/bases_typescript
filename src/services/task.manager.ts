@@ -5,23 +5,30 @@ import {  TaskRepository } from '../repositories/task.repository.js'
 export class TaskManager {
     private tasks : Task[]= []
 
-   getTaks():Task[]{
-
-      return [...this.tasks];
+    async getTaks():Promise<Task[]>{
+      const repository = new TaskRepository()
+      const taksRepo:Task[] = await repository.readFile()
+       this.tasks = taksRepo; 
+       console.log(this.tasks)
+      return this.tasks ;
    } 
 
-   createTask(data:CreateTaskInput): Task{
-   const task: Task = {
-      id: crypto.randomUUID(),
-      title: data.title,
-      state: 'pendiente',
-      category:data.category,
-      createdAt:new Date()
-   }
-   this.tasks.push (task);
-   const saveTaks = new TaskRepository ()
-   saveTaks.saveFile(this.tasks)
-   return task;
+   async createTask(data:CreateTaskInput):Promise<Task>{
+
+      const repository = new TaskRepository () // 1. inicializo mi TaskREpository
+      const taksRepo = await repository.readFile() //2. Leo mi archivo , traigo las tareas guardadas esperando que me cumpla la promesa
+      this.tasks = taksRepo               //3. Asigno a la propiedad de mi clase "this.taks" las tareas leídas del archivo 
+
+      const task: Task = {                   //4. Creo mi nueva tarea
+         id: crypto.randomUUID(),
+         title: data.title,
+         state: 'pendiente',
+         category:data.category,
+         createdAt:new Date()
+      }
+      this.tasks.push(task)               //5. a this.taks le agrego la nueva tarea creada
+      await repository.saveFile(this.tasks) // 6. Guardo la propiedad this.taks de mi clase en el archivo taks.json, lo sobreescribo
+      return task;                        //7. retorno la tarea nueva tarea creada
    }
 
    findTaskById(id: string):Task | null {
