@@ -1,8 +1,13 @@
 import { TaskManager } from './services/task.manager.js'
-import { TaskRepository } from './repositories/task.repository.js'
+
 
 
 const manager = new TaskManager()
+const tasks = await manager.getTasks()
+console.log(tasks)
+
+// const updateTask = await manager.completeTask("40051bf4-8c41-411a-9922-5d6022aa73f4")
+// console.log(updateTask)
 
 // const task03= manager.createTask({title: "limpiar habitación", category:"estudio"})
 

@@ -11,13 +11,19 @@ export class TaskRepository {
             console.log("Archivo guardado con exito !!!")
 
         }catch (error){
-            console.error('Error al guardar', Error)
+            console.error('Error al guardar', error)
         }
     }
     async readFile():Promise<Task[]>{
         try {
             const datos = await readFile(this.ruta,'utf-8')
             const tasks:Task[] = JSON.parse(datos)
+            for(let i=0; i<tasks.length; i++){
+                const task = tasks[i]
+                if(task){
+                    task.createdAt = new Date(task.createdAt)
+                }
+            }
             return tasks
 
         } catch (error) {

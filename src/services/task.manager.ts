@@ -1,83 +1,103 @@
 import crypto = require('crypto')
-import type { Task, CategoryTask, CreateTaskInput, StatusTask,TaskWithoutCreateAt, UpdateTaskInput } from '../types/task.types.js';
+import type { Task, CreateTaskInput, UpdateTaskInput } from '../types/task.types.js';
 import {  TaskRepository } from '../repositories/task.repository.js'
 
-export class TaskManager {
-    private tasks : Task[]= []
 
-    async getTaks():Promise<Task[]>{
-      const repository = new TaskRepository()
-      const taksRepo:Task[] = await repository.readFile()
-       this.tasks = taksRepo; 
-       console.log(this.tasks)
-      return this.tasks ;
+export class TaskManager {
+
+    private repository = new TaskRepository()
+
+    async getTasks():Promise<Task[]>{
+    
+      
+      return this.repository.readFile() ;
    } 
 
-   async createTask(data:CreateTaskInput):Promise<Task>{
+   async createTask(data: CreateTaskInput): Promise<Task>{
 
-      const repository = new TaskRepository () // 1. inicializo mi TaskREpository
-      const taksRepo = await repository.readFile() //2. Leo mi archivo , traigo las tareas guardadas esperando que me cumpla la promesa
-      this.tasks = taksRepo               //3. Asigno a la propiedad de mi clase "this.taks" las tareas leídas del archivo 
+      const taksRepo = await this.repository.readFile()         
 
-      const task: Task = {                   //4. Creo mi nueva tarea
+      const task: Task = {                   
          id: crypto.randomUUID(),
          title: data.title,
          state: 'pendiente',
          category:data.category,
          createdAt:new Date()
       }
-      this.tasks.push(task)               //5. a this.taks le agrego la nueva tarea creada
-      await repository.saveFile(this.tasks) // 6. Guardo la propiedad this.taks de mi clase en el archivo taks.json, lo sobreescribo
-      return task;                        //7. retorno la tarea nueva tarea creada
+      taksRepo.push(task)       
+      await this.repository.saveFile(taksRepo) 
+      return task;                        
    }
 
-   findTaskById(id: string):Task | null {
-   for(let i=0; i<this.tasks.length; i++){ 
-       const task:Task | undefined = this.tasks[i]; 
-                                    
-        if(task && task.id === id){  
-           
-           return task;
-        }
-    }
-    console.log(`No se encontro la tarea con el id ${id}`)
-    return null
+   async findTaskById(id: string):Promise<Task | null> {
+
+      const taksRepo = await this.repository.readFile() 
+  
+         for(let i=0; i<taksRepo.length; i++){  
+            const task:Task | undefined = taksRepo[i];
+                                          
+            if(task && task.id === id){ 
+               
+               return task; 
+            }
+         }
+      console.log(`No se encontro la tarea con el id ${id}`)
+      return null
    }
    
-   deleteTask (id: string):boolean {
-   for(let i=0; i<this.tasks.length; i++){ 
-      const task:Task | undefined = this.tasks[i] 
-      if(task && task.id===id){
-         this.tasks.splice(i,1)
-         console.log('Tarea eliminada, ', task)
-         return true
+   async deleteTask (id: string): Promise<boolean> {
+
+      const taskRepo = await this.repository.readFile()
+      for(let i=0; i<taskRepo.length; i++){ 
+         const task:Task | undefined = taskRepo[i] 
+         if(task && task.id===id){
+            taskRepo.splice(i,1)
+            console.log('Tarea eliminada, ', task)
+            await this.repository.saveFile(taskRepo)
+            return true
+         }
       }
-   }
-   console.log('No se encontro tarea con el id ', id)
-   return false
+      console.log('No se encontro tarea con el id ', id)
+      return false
    }
 
-   updateTask(id:string, data:UpdateTaskInput, ):Task | undefined{
-   for(let i =0; i<this.tasks.length; i++){
-      const task:Task | undefined = this.tasks[i];
-      if(task && task.id === id){
-         if(data.title !== undefined){
-            task.title = data.title;
+   async updateTask(id:string, data:UpdateTaskInput, ):Promise<Task | undefined>{
+
+      const taskRepo = await this.repository.readFile()
+      for(let i =0; i<taskRepo.length; i++){
+         const task:Task | undefined = taskRepo[i];
+      
+         if(task && task.id === id){
+            if(task.state === 'cancelada'){
+               console.log(`La tarea con el id ${id} ya se encuentra cancelada no se puede modificar`)
+               return undefined
+            }else if(task.state === "completada" ){
+               console.log(`La tarea con el id ${id} ya se encuentra completada no se puede modificar`)
+               return undefined
+            }else {
+               if(data.title !== undefined){
+                  task.title = data.title;
+               }
+               if( data.category !== undefined){
+                  task.category = data.category;
+               }
+               taskRepo[i] = task
+               console.log(`Tarea actualizada satisfactoriamente`)
+               await this.repository.saveFile(taskRepo) 
+                                                   
+               return task
+            }
          }
-         if( data.category !== undefined){
-            task.category = data.category;
-         }
-         console.log(`Tarea actualizada satisfacctoriamente`)
-         return task
       }
-   }
    console.log(`NO se encontró la tarea con el ID ${id}`)
    return undefined
    }
 
-   completeTask(id:string):Task | null{
-      for(let i=0; i<this.tasks.length; i++){
-         const task:Task | undefined = this.tasks[i]
+   async completeTask(id:string):Promise<Task | null>{
+    
+      const taskRepo = await this.repository.readFile()
+      for(let i=0; i<taskRepo.length; i++){
+         const task:Task | undefined = taskRepo[i]
          if(task && task.id === id){
 
             if(task.state === 'pendiente'){
@@ -85,8 +105,12 @@ export class TaskManager {
                   ...task,
                   state:'completada'
                }
-               this.tasks[i] = completedTask;
-            return completedTask;            }
+               taskRepo[i] = completedTask;
+               await this.repository.saveFile(taskRepo) 
+               console.log(`La tarea con el id ${id} ha sido completada`)
+                  return completedTask;            
+
+            }
             else if (task.state === 'cancelada'){
                console.log("La tarea se encuentra cancelada, no se puede completar")
                return null
@@ -100,16 +124,19 @@ export class TaskManager {
       return null
    }
    
-   cancelTask( id:string ):Task | null {
-      for(let i=0; i<this.tasks.length; i++){
-         const task:Task | undefined = this.tasks[i]
+   async cancelTask( id:string ):Promise<Task | null> {
+     
+      const taksRepo = await this.repository.readFile();
+      for(let i=0; i<taksRepo.length; i++){
+         const task:Task | undefined = taksRepo[i]
          if(task && task.id === id){
             if(task.state === 'pendiente'){
                const updatedTask: Task = {
                   ...task,
                   state: 'cancelada'
                }
-               this.tasks[i]=updatedTask;
+               taksRepo[i]=updatedTask; 
+               await this.repository.saveFile(taksRepo) // aqui estoy guardando de la misma manera como los demás 
                return updatedTask;
               
             }else if(task.state === 'cancelada'){
