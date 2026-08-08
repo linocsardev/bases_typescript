@@ -1,154 +1,171 @@
 import crypto = require('crypto')
 import type { Task, CreateTaskInput, UpdateTaskInput } from '../types/task.types.js';
-import {  TaskRepository } from '../repositories/task.repository.js'
+import { TaskRepository } from '../repositories/task.repository.js'
+import { TaskAlreadyCancelledError, TaskAlreadyCompletedError, TaskNotFoundError } from '../errors/task.errors.js';
+
 
 
 export class TaskManager {
 
-    private repository = new TaskRepository()
+   private repository = new TaskRepository()
 
-    async getTasks():Promise<Task[]>{
-    
-      
-      return this.repository.readFile() ;
-   } 
+   async getTasks(): Promise<Task[]> {
 
-   async createTask(data: CreateTaskInput): Promise<Task>{
+      return await this.loadTasks();
+   }
 
-      const taksRepo = await this.repository.readFile()         
+   async createTask(data: CreateTaskInput): Promise<Task> {
 
-      const task: Task = {                   
+      const taksRepo = await this.loadTasks()
+
+      const task: Task = {
          id: crypto.randomUUID(),
          title: data.title,
          state: 'pendiente',
-         category:data.category,
-         createdAt:new Date()
+         category: data.category,
+         createdAt: new Date()
       }
-      taksRepo.push(task)       
-      await this.repository.saveFile(taksRepo) 
-      return task;                        
+      taksRepo.push(task)
+      await this.saveTasks(taksRepo)
+      return task;
    }
 
-   async findTaskById(id: string):Promise<Task | null> {
+   async findTaskById(id: string): Promise<Task> {
 
-      const taksRepo = await this.repository.readFile() 
-  
-         for(let i=0; i<taksRepo.length; i++){  
-            const task:Task | undefined = taksRepo[i];
-                                          
-            if(task && task.id === id){ 
-               
-               return task; 
-            }
-         }
-      console.log(`No se encontro la tarea con el id ${id}`)
-      return null
-   }
-   
-   async deleteTask (id: string): Promise<boolean> {
+      const tasksRepo = await this.loadTasks()
+      const task = tasksRepo.find(task => task.id === id)
 
-      const taskRepo = await this.repository.readFile()
-      for(let i=0; i<taskRepo.length; i++){ 
-         const task:Task | undefined = taskRepo[i] 
-         if(task && task.id===id){
-            taskRepo.splice(i,1)
-            console.log('Tarea eliminada, ', task)
-            await this.repository.saveFile(taskRepo)
-            return true
-         }
+      if (!task) {
+         throw new TaskNotFoundError(id)
       }
-      console.log('No se encontro tarea con el id ', id)
-      return false
+      return task;
    }
 
-   async updateTask(id:string, data:UpdateTaskInput, ):Promise<Task | undefined>{
+   async deleteTask(id: string): Promise<boolean> {
 
-      const taskRepo = await this.repository.readFile()
-      for(let i =0; i<taskRepo.length; i++){
-         const task:Task | undefined = taskRepo[i];
+      const tasksRepo = await this.loadTasks()
+      const taskIndex = this.findTaskIndex(tasksRepo, id)
+      if (taskIndex === -1) {
+         throw new TaskNotFoundError(id)
+      }
+      tasksRepo.splice(taskIndex, 1);
+      console.log("Tarea Eliminada id: ", id);
+      await this.saveTasks(tasksRepo);
+      return true;
+   }
+
+   async updateTask(id: string, data: UpdateTaskInput): Promise<Task> {
+
+      const tasksRepo = await this.loadTasks()
+      const index = this.findTaskIndex(tasksRepo, id)
+
+      if (index === -1) {
+         throw new TaskNotFoundError(id)
+      }
+      const task = tasksRepo[index]
+      if (!task) {
+         throw new TaskNotFoundError(id);
+      }
+
+      if (task.state === 'cancelada') {
+
+         throw new TaskAlreadyCancelledError(id);
+
+      }
+      if (task.state === 'completada') {
+
+         throw new TaskAlreadyCompletedError(id);
+
+      }
+      if (data.title !== undefined) {
+
+         task.title = data.title;
+
+      }
+      if (data.category !== undefined) {
+
+         task.category = data.category;
+      }
+      tasksRepo[index] = task
+      console.log(`Tarea actualizada satisfactoriamente`)
+      await this.saveTasks(tasksRepo);
+      return task
+
+   }
+
+   async completeTask(id: string): Promise<Task> {
+
+      const tasksRepo = await this.loadTasks()
+      const taskIndex = this.findTaskIndex(tasksRepo, id)
       
-         if(task && task.id === id){
-            if(task.state === 'cancelada'){
-               console.log(`La tarea con el id ${id} ya se encuentra cancelada no se puede modificar`)
-               return undefined
-            }else if(task.state === "completada" ){
-               console.log(`La tarea con el id ${id} ya se encuentra completada no se puede modificar`)
-               return undefined
-            }else {
-               if(data.title !== undefined){
-                  task.title = data.title;
-               }
-               if( data.category !== undefined){
-                  task.category = data.category;
-               }
-               taskRepo[i] = task
-               console.log(`Tarea actualizada satisfactoriamente`)
-               await this.repository.saveFile(taskRepo) 
-                                                   
-               return task
-            }
-         }
+      if (taskIndex === -1) {
+         throw new TaskNotFoundError(id);
       }
-   console.log(`NO se encontró la tarea con el ID ${id}`)
-   return undefined
+      const task = tasksRepo[taskIndex];
+      if (!task) {
+         throw new TaskNotFoundError(id)
+      }
+      if (task.state === 'pendiente') {
+         const completedTask: Task = {
+            ...task,
+            state: 'completada'
+         }
+         tasksRepo[taskIndex] = completedTask;
+         await this.saveTasks(tasksRepo)
+         console.log(`La tarea con el id ${id} ha sido completada`)
+         return completedTask;
+
+      }
+      if (task.state === 'cancelada') {
+         throw new TaskAlreadyCancelledError(id);
+
+      }
+      if (task.state === 'completada') {
+         throw new TaskAlreadyCompletedError(id);
+      }
+
+      throw new Error('Estado de tarea no válido')
    }
 
-   async completeTask(id:string):Promise<Task | null>{
-    
-      const taskRepo = await this.repository.readFile()
-      for(let i=0; i<taskRepo.length; i++){
-         const task:Task | undefined = taskRepo[i]
-         if(task && task.id === id){
+   async cancelTask(id: string): Promise<Task> {
 
-            if(task.state === 'pendiente'){
-               const completedTask :Task = {
-                  ...task,
-                  state:'completada'
-               }
-               taskRepo[i] = completedTask;
-               await this.repository.saveFile(taskRepo) 
-               console.log(`La tarea con el id ${id} ha sido completada`)
-                  return completedTask;            
-
-            }
-            else if (task.state === 'cancelada'){
-               console.log("La tarea se encuentra cancelada, no se puede completar")
-               return null
-
-            }else if(task.state === 'completada'){
-               throw new Error(`La tarea ya está completada`)
-            }
-         }
+      const taksRepo = await this.loadTasks();
+      const taskIndex = this.findTaskIndex(taksRepo, id)
+      
+      if (taskIndex === -1) {
+         throw new TaskNotFoundError(id)
       }
-      console.log(`No se encontro la tarea con el id ${id}`)
-      return null
+      const task = taksRepo[taskIndex]
+      if (!task) {
+         throw new TaskNotFoundError(id)
+      }
+      if (task.state === 'pendiente') {
+         const updatedTask: Task = {
+            ...task,
+            state: "cancelada"
+         }
+         taksRepo[taskIndex] = updatedTask
+         await this.saveTasks(taksRepo);
+         return updatedTask;
+      }
+      if(task.state === 'cancelada') {
+
+         throw new TaskAlreadyCancelledError(id)
+      }  
+      if (task.state === 'completada') {
+         throw new TaskAlreadyCompletedError(id)
+      }
+      throw new Error(`Estado de la tarea no válido`)
    }
-   
-   async cancelTask( id:string ):Promise<Task | null> {
-     
-      const taksRepo = await this.repository.readFile();
-      for(let i=0; i<taksRepo.length; i++){
-         const task:Task | undefined = taksRepo[i]
-         if(task && task.id === id){
-            if(task.state === 'pendiente'){
-               const updatedTask: Task = {
-                  ...task,
-                  state: 'cancelada'
-               }
-               taksRepo[i]=updatedTask; 
-               await this.repository.saveFile(taksRepo) // aqui estoy guardando de la misma manera como los demás 
-               return updatedTask;
-              
-            }else if(task.state === 'cancelada'){
-                throw new Error(`La tarea ya se encuentra cancelada`)
-            }else if(task.state === 'completada'){
-               console.log("sin acción, la tarea está completada")
-               return null
-            }
 
-         }
-      }
-      console.log(`No se encontro la tarea con el id ${id}`)
-      return null;
-}
+   private async loadTasks(): Promise < Task[] > {
+      return this.repository.getAll()
+   }
+   private async saveTasks(data: Task[]): Promise < void> {
+      return this.repository.save(data)
+   }
+   private  findTaskIndex(tasks: Task[], id: string): number {
+      const taskIndex = tasks.findIndex(task => task.id === id)
+      return taskIndex
+   }
 }

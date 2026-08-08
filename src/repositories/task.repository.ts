@@ -3,7 +3,7 @@ import type { Task } from '../types/task.types.js'
 
 export class TaskRepository {
      private ruta:string = "./src/repositories/tasks.json"
-    async saveFile( data:Task [] ):Promise<void>{
+     private async saveFile( data:Task [] ):Promise<void>{
      
         try {
             const contenidoJson = JSON.stringify(data, null, 2)
@@ -14,7 +14,7 @@ export class TaskRepository {
             console.error('Error al guardar', error)
         }
     }
-    async readFile():Promise<Task[]>{
+     private async readFile():Promise<Task[]>{
         try {
             const datos = await readFile(this.ruta,'utf-8')
             const tasks:Task[] = JSON.parse(datos)
@@ -30,5 +30,11 @@ export class TaskRepository {
             console.log('Error al leer archivo', error)
             return [];
         }
+    }
+    getAll():Promise<Task[]>{
+        return  this.readFile()
+    }
+    save(data:Task[]):Promise<void>{
+        return this.saveFile(data)
     }
 }
