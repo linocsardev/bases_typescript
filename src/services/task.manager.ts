@@ -1,7 +1,9 @@
 import crypto = require('crypto')
-import type { Task, CreateTaskInput, UpdateTaskInput } from '../types/task.types.js';
+import type { Task, CreateTaskInput, UpdateTaskInput, StatusTask, CategoryTask, TaskFilter } from '../types/task.types.js';
 import { TaskRepository } from '../repositories/task.repository.js'
-import { TaskAlreadyCancelledError, TaskAlreadyCompletedError, TaskNotFoundError } from '../errors/task.errors.js';
+import { TaskAlreadyCancelledError, TaskAlreadyCompletedError, TaskInvalidTitleError, TaskNotFoundError, TaskTitleAndCategoryInvalid, TaskTitleLengthError } from '../errors/task.errors.js';
+import { TaskValidator } from '../validations/task.validator.js';
+import { stat } from 'fs';
 
 
 
@@ -15,12 +17,13 @@ export class TaskManager {
    }
 
    async createTask(data: CreateTaskInput): Promise<Task> {
-
+      
+      TaskValidator.validateTitle(data.title)
+      TaskValidator.validateCategory(data.category)
       const taksRepo = await this.loadTasks()
-
       const task: Task = {
          id: crypto.randomUUID(),
-         title: data.title,
+         title: data.title.trim(),
          state: 'pendiente',
          category: data.category,
          createdAt: new Date()
@@ -45,6 +48,7 @@ export class TaskManager {
 
       const tasksRepo = await this.loadTasks()
       const taskIndex = this.findTaskIndex(tasksRepo, id)
+
       if (taskIndex === -1) {
          throw new TaskNotFoundError(id)
       }
@@ -56,6 +60,9 @@ export class TaskManager {
 
    async updateTask(id: string, data: UpdateTaskInput): Promise<Task> {
 
+      if(data.title === undefined && data.category === undefined ){
+         throw new TaskTitleAndCategoryInvalid();
+      }
       const tasksRepo = await this.loadTasks()
       const index = this.findTaskIndex(tasksRepo, id)
 
@@ -77,13 +84,14 @@ export class TaskManager {
          throw new TaskAlreadyCompletedError(id);
 
       }
-      if (data.title !== undefined) {
-
-         task.title = data.title;
-
+      if(data.title !== undefined){
+         TaskValidator.validateTitle(data.title);
+         task.title = data.title.trim();
       }
-      if (data.category !== undefined) {
 
+      
+      if (data.category !== undefined) {
+         TaskValidator.validateCategory(data.category)
          task.category = data.category;
       }
       tasksRepo[index] = task
@@ -156,6 +164,33 @@ export class TaskManager {
          throw new TaskAlreadyCompletedError(id)
       }
       throw new Error(`Estado de la tarea no válido`)
+   }
+   async searchTasks(filter: TaskFilter):Promise<Task[]>{
+      if(!filter){
+         return await this.loadTasks()
+      }else {
+         const tasksRepo = await this.loadTasks()
+         return tasksRepo.filter((tasks)=>{
+          const coincideEstado = !filter.state || tasks.state === filter.state
+          const coincideCategoria = !filter.category || tasks.category === filter.category
+          return coincideEstado && coincideCategoria
+         })
+      }
+      return []
+   }
+
+   async getTasksByState(state: StatusTask):Promise<Task[]>{
+      const tasksRepo = await this.loadTasks()
+     
+      return tasksRepo.filter(task => task.state === state)
+   }
+   async getTasksByCategory (category: CategoryTask):Promise<Task[]>{
+      const tasksRepo = await this.loadTasks();
+      return tasksRepo.filter(task=> task.category === category);
+   }
+   async getTasksByStateAndCategory(state: StatusTask, category:CategoryTask):Promise<Task[]>{
+      const tasksRepo = await this.loadTasks()
+      return tasksRepo.filter(tasks=>(tasks.state === state && tasks.category === category))
    }
 
    private async loadTasks(): Promise < Task[] > {

@@ -6,6 +6,10 @@ export interface Task {
     createdAt: Date
     
 }
+export interface TaskFilter {
+    state?: string
+    category?:string
+}
 
 export type CreateTaskInput = 
     Pick<Task, 'title'| 'category'>
