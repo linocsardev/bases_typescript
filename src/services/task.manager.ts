@@ -165,33 +165,32 @@ export class TaskManager {
       }
       throw new Error(`Estado de la tarea no válido`)
    }
-   async searchTasks(filter: TaskFilter):Promise<Task[]>{
-      if(!filter){
-         return await this.loadTasks()
-      }else {
-         const tasksRepo = await this.loadTasks()
-         return tasksRepo.filter((tasks)=>{
-          const coincideEstado = !filter.state || tasks.state === filter.state
-          const coincideCategoria = !filter.category || tasks.category === filter.category
-          return coincideEstado && coincideCategoria
-         })
-      }
-      return []
-   }
 
-   async getTasksByState(state: StatusTask):Promise<Task[]>{
-      const tasksRepo = await this.loadTasks()
+   
+
+   async searchTasks(filter: TaskFilter):Promise<Task[]>{
+    
+       const tasksRepo = await this.loadTasks()
+
+       return tasksRepo.filter((tasks)=>{
+        const coincideEstado = !filter.state || tasks.state === filter.state
+        const coincideCategoria = !filter.category || tasks.category === filter.category
+        return coincideEstado && coincideCategoria
+       })
+   }
+   // async getTasksByState(state: StatusTask):Promise<Task[]>{
+   //    const tasksRepo = await this.loadTasks()
      
-      return tasksRepo.filter(task => task.state === state)
-   }
-   async getTasksByCategory (category: CategoryTask):Promise<Task[]>{
-      const tasksRepo = await this.loadTasks();
-      return tasksRepo.filter(task=> task.category === category);
-   }
-   async getTasksByStateAndCategory(state: StatusTask, category:CategoryTask):Promise<Task[]>{
-      const tasksRepo = await this.loadTasks()
-      return tasksRepo.filter(tasks=>(tasks.state === state && tasks.category === category))
-   }
+   //    return tasksRepo.filter(task => task.state === state)
+   // }
+   // async getTasksByCategory (category: CategoryTask):Promise<Task[]>{
+   //    const tasksRepo = await this.loadTasks();
+   //    return tasksRepo.filter(task=> task.category === category);
+   // }
+   // async getTasksByStateAndCategory(state: StatusTask, category:CategoryTask):Promise<Task[]>{
+   //    const tasksRepo = await this.loadTasks()
+   //    return tasksRepo.filter(tasks=>(tasks.state === state && tasks.category === category))
+   // }
 
    private async loadTasks(): Promise < Task[] > {
       return this.repository.getAll()
