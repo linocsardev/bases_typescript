@@ -1,21 +1,22 @@
 import { TaskAlreadyCancelledError, TaskAlreadyCompletedError, TaskNotFoundError } from './errors/task.errors.js';
 import { TaskManager } from './services/task.manager.js';
 const manager = new TaskManager();
-try {
-    await manager.cancelTask("b542d689-a27e-4c6e-8826-9c614a8b952f");
-    // await manager.completeTask("40051bf4-8c41-411a-9922-5d6022aa73f4")
-}
-catch (error) {
-    if (error instanceof TaskNotFoundError) {
-        console.log(`No se encontro el id :/`);
-    }
-    else if (error instanceof TaskAlreadyCompletedError) {
-        console.log(`La tarea ya se encuentra completada :/`);
-    }
-    else if (error instanceof TaskAlreadyCancelledError) {
-        console.log(`La tarea ya sencuentra cancelada :/`);
-    }
-}
+const OrderDate = await manager.getTasksSortedByDate();
+console.log(OrderDate);
+// const buscarManager = await manager.searchTasks("der")
+// console.log(buscarManager)
+// try {
+//     await manager.cancelTask("b542d689-a27e-4c6e-8826-9c614a8b952f")
+//     // await manager.completeTask("40051bf4-8c41-411a-9922-5d6022aa73f4")
+// } catch (error) {
+//     if(error instanceof TaskNotFoundError){
+//         console.log(`No se encontro el id :/`)
+//     }else if(error instanceof TaskAlreadyCompletedError){
+//         console.log(`La tarea ya se encuentra completada :/`)
+//     }else if(error instanceof TaskAlreadyCancelledError){
+//         console.log(`La tarea ya sencuentra cancelada :/`)
+//     }
+// }
 // const updateTask = await manager.completeTask("40051bf4-8c41-411a-9922-5d6022aa73f4")
 // console.log(updateTask)
 // const task03= manager.createTask({title: "limpiar habitación", category:"estudio"})

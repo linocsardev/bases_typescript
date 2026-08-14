@@ -1,7 +1,7 @@
 import crypto = require('crypto')
 import type { Task, CreateTaskInput, UpdateTaskInput, StatusTask, CategoryTask, TaskFilter } from '../types/task.types.js';
 import { TaskRepository } from '../repositories/task.repository.js'
-import { TaskAlreadyCancelledError, TaskAlreadyCompletedError, TaskInvalidTitleError, TaskNotFoundError, TaskTitleAndCategoryInvalid, TaskTitleLengthError } from '../errors/task.errors.js';
+import { TaskAlreadyCancelledError, TaskAlreadyCompletedError, TaskInvalidTitleError, TaskNotFoundError, TaskSearchNotFoundError, TaskTitleAndCategoryInvalid, TaskTitleLengthError } from '../errors/task.errors.js';
 import { TaskValidator } from '../validations/task.validator.js';
 import { stat } from 'fs';
 
@@ -166,9 +166,41 @@ export class TaskManager {
       throw new Error(`Estado de la tarea no válido`)
    }
 
+   async searchTasks(title: string):Promise<Task[]>{
+
+      const tasksRepo = await this.loadTasks()
+
+      const encontrado = tasksRepo.filter((task)=>(task.title.toLowerCase().includes(title.toLowerCase())))
+      if(encontrado.length === 0){
+
+          throw new TaskSearchNotFoundError()  
+      }
+      return encontrado
+
+   }
+   async getTasksSortedByDate(): Promise<Task[]>{
+      
+      const tasksRepo = await this.loadTasks()
+
+      const tasksOrder = tasksRepo.sort((a,b):number=>{
+         const dateA = a.createdAt.getTime()
+         const dateB = b.createdAt.getTime()
+         return dateB - dateA
+      })
+
+      return tasksOrder
+   }
+
+   async getTasksPaginated(page:number, limit:number): Promise<Task[]>{
+      const tasksRepo = await this.loadTasks()
+      const inicio: number = (page - 1) * limit
+      return tasksRepo.slice(inicio, inicio+limit)
+      
+   }
+
    
 
-   async searchTasks(filter: TaskFilter):Promise<Task[]>{
+   async filterTasks(filter: TaskFilter):Promise<Task[]>{
     
        const tasksRepo = await this.loadTasks()
 

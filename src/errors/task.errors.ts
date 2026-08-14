@@ -52,3 +52,11 @@ export class TaskInvalidCategoryError extends Error {
         Object.setPrototypeOf(this, TaskInvalidCategoryError.prototype)
     }
 }
+
+export class TaskSearchNotFoundError extends Error {
+    constructor(){
+        super(`Tarea no encontrada`)
+        this.name = `TaskSearchNotFoundError`
+        Object.setPrototypeOf(this, TaskSearchNotFoundError.prototype)
+    }
+}
